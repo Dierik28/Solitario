@@ -1,0 +1,26 @@
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Button?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.example.juegosolitario.PantallaInicioController"
+            prefWidth="1920" prefHeight="1080"
+            style="-fx-background-image: url('/imagenes/fondo.png');
+                   -fx-background-size: cover;
+                   -fx-background-position: center;">
+
+
+    <!-- Título -->
+    <Label fx:id="tituloJuego" text="Juego Solitario"
+           layoutX="780" layoutY="150"
+           style="-fx-text-fill: black; -fx-font-size: 50px; -fx-font-weight: bold;" />
+
+    <!-- Botón Jugar -->
+    <Button fx:id="botonJugar" text="Jugar"
+            layoutX="860" layoutY="645" prefWidth="200" prefHeight="80"
+            onAction="#jugar" />
+
+    <!-- Botón Salir -->
+    <Button fx:id="botonSalir" text="Salir"
+            layoutX="860" layoutY="745" prefWidth="200" prefHeight="80"
+            onAction="#salir" />
+</AnchorPane>
