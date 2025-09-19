@@ -2,6 +2,7 @@ package solitaire;
 
 import DeckOfCards.CartaInglesa;
 import DeckOfCards.Palo;
+import DeckOfCards.Pila;
 
 import java.util.ArrayList;
 /**
@@ -16,8 +17,10 @@ public class SolitaireGame {
     FoundationDeck lastFoundationUpdated;
     DrawPile drawPile;
     WastePile wastePile;
+    private Pila<EstadoJuego> registroMovimientos;
 
     public SolitaireGame() {
+        registroMovimientos = new Pila<>(1000);
         drawPile = new DrawPile();
         wastePile = new WastePile();
         createTableaux();
@@ -31,14 +34,21 @@ public class SolitaireGame {
     public void reloadDrawPile() {
         ArrayList<CartaInglesa> cards = wastePile.emptyPile();
         drawPile.recargar(cards);
+        if(!cards.isEmpty()) {
+            registroMovimientos.push(EstadoJuego.recargar(cards.size()));
+        }
     }
 
     /**
      * Move cards from Draw pile to Waste Pile.
      */
     public void drawCards() {
-        ArrayList<CartaInglesa> cards = drawPile.retirarCartas();
+        int cuantas = drawPile.getCuantasCartasSeEntregan();
+        ArrayList<CartaInglesa> cards = drawPile.retirarUltimas(cuantas,true);
         wastePile.addCartas(cards);
+        if (!cards.isEmpty()) {
+            registroMovimientos.push(EstadoJuego.crearRobo(cards));
+        }
     }
 
     /**
@@ -50,7 +60,9 @@ public class SolitaireGame {
     public boolean moveWasteToTableau(int tableauDestino) {
         boolean movimientoRealizado = false;
         TableauDeck destino = tableau.get(tableauDestino - 1);
+        CartaInglesa carta = wastePile.verCarta();
         if (moveWasteToTableau(destino)) {
+            registroMovimientos.push(EstadoJuego.wasteToTableau(carta, tableauDestino - 1));
             movimientoRealizado = true;
         }
         return movimientoRealizado;
@@ -67,37 +79,35 @@ public class SolitaireGame {
     public boolean moveTableauToTableau(int tableauFuente, int tableauDestino) {
         boolean movimientoRealizado = false;
         TableauDeck fuente = tableau.get(tableauFuente - 1);
-        if (!fuente.isEmpty()) {
-            TableauDeck destino = tableau.get(tableauDestino - 1);
+        TableauDeck destino = tableau.get(tableauDestino - 1);
 
-            int valorQueDebeTenerLaCartaInicialDeLaFuente;
-            CartaInglesa cartaUltimaDelDestino; // aqui se coloca la fuente
-            if (!destino.isEmpty()) {
-                // si hay cartas en el destino, la ultima y primer debe concordar
-                cartaUltimaDelDestino = destino.verUltimaCarta();
-                valorQueDebeTenerLaCartaInicialDeLaFuente = cartaUltimaDelDestino.getValor() - 1;
-            } else {
-                // si el destino está vacío, solo puede colocar rey
-                valorQueDebeTenerLaCartaInicialDeLaFuente = 13;
-            }
-            // ver que carta es la del inicio del bloque
-            CartaInglesa cartaInicialDePrueba = fuente.viewCardStartingAt(valorQueDebeTenerLaCartaInicialDeLaFuente);
-            if (cartaInicialDePrueba != null && destino.sePuedeAgregarCarta(cartaInicialDePrueba)) {
-                ArrayList<CartaInglesa> cartas = fuente.removeStartingAt(valorQueDebeTenerLaCartaInicialDeLaFuente);
-                if (destino.agregarBloqueDeCartas(cartas)) {
-                    if (!fuente.isEmpty()) {
-                        // Voltear la carta que se destapa en el Tableau
+        if (!fuente.isEmpty()) {
+            int valorQueDebeTenerLaCartaInicial = destino.isEmpty() ? 13 : destino.verUltimaCarta().getValor() - 1;
+            CartaInglesa cartaInicial = fuente.viewCardStartingAt(valorQueDebeTenerLaCartaInicial);
+
+            if (cartaInicial != null && destino.sePuedeAgregarCarta(cartaInicial)) {
+                ArrayList<CartaInglesa> cartasMovidas = fuente.removeStartingAt(valorQueDebeTenerLaCartaInicial);
+                if (destino.agregarBloqueDeCartas(cartasMovidas)) {
+                    boolean voltearUltima = false;
+                    if (!fuente.isEmpty() && !fuente.verUltimaCarta().isFaceup()) {
                         fuente.verUltimaCarta().makeFaceUp();
+                        voltearUltima = true;
                     }
+                    registroMovimientos.push(
+                            EstadoJuego.tableauToTableau(
+                                    tableauFuente - 1,
+                                    tableauDestino - 1,
+                                    cartasMovidas,
+                                    voltearUltima
+                            )
+                    );
                     movimientoRealizado = true;
                 }
             }
-
         }
-
-
         return movimientoRealizado;
     }
+
 
 
     /**
@@ -115,6 +125,10 @@ public class SolitaireGame {
             if (ultimaCarta != null && ultimaCarta.isFaceup()) {
                 CartaInglesa carta = fuente.removerUltimaCarta();
                 if (moveCartaToFoundation(carta)) {
+                    int foundationIdx = carta.getPalo().ordinal();
+                    registroMovimientos.push(
+                            EstadoJuego.tableauToFoundation(numero - 1, foundationIdx, carta, false)
+                    );
                     movimientoRealizado = true;
                 } else {
                     fuente.agregarCarta(carta);
@@ -151,6 +165,8 @@ public class SolitaireGame {
         CartaInglesa carta = wastePile.verCarta();
         if (moveCartaToFoundation(carta)) {
             carta = wastePile.getCarta();
+            int foundationIdx = carta.getPalo().ordinal();
+            registroMovimientos.push(EstadoJuego.wasteToFoundation(carta, foundationIdx));
             movimientoRealizado = true;
         }
         return movimientoRealizado;
@@ -260,6 +276,55 @@ public class SolitaireGame {
 
     public ArrayList<FoundationDeck> getFoundations() {
         return foundation;
+    }
+
+    public boolean undo() {
+        if (registroMovimientos.estaVacia()) return false;
+
+        EstadoJuego estado = registroMovimientos.pop();
+
+        switch (estado.getTipo()) {
+            case DRAW:
+                ArrayList<CartaInglesa> cartasARetornar = estado.getCartasRetiradas();
+                wastePile.retirarUltimas(cartasARetornar.size(), false);
+                drawPile.regresarCartas(cartasARetornar);
+                break;
+
+            case RECARGA:
+                ArrayList<CartaInglesa> devueltas = drawPile.retirarUltimas(estado.getCantidad(), false);
+                for (CartaInglesa carta : devueltas) carta.makeFaceUp();
+                wastePile.addCartas(devueltas);
+                break;
+
+            case WASTE_TO_TABLEAU:
+                TableauDeck tabla = tableau.get(estado.getDestino());
+                CartaInglesa top = tabla.removerUltimaCarta();
+                wastePile.addCarta(top);
+                break;
+
+            case WASTE_TO_FOUNDATION:
+                FoundationDeck fnd = foundation.get(estado.getDestino());
+                CartaInglesa carta = fnd.removerUltimaCarta();
+                wastePile.addCarta(carta);
+                break;
+
+            case TABLEAU_TO_TABLEAU:
+                TableauDeck src = tableau.get(estado.getOrigen());
+                TableauDeck dst = tableau.get(estado.getDestino());
+                ArrayList<CartaInglesa> bloque = dst.removerUltimas(estado.getCantidad());
+                if (estado.isVoltearUltima() && !src.isEmpty()) src.getUltimaCarta().makeFaceDown();
+                src.agregarDirecto(bloque);
+                break;
+
+            case TABLEAU_TO_FOUNDATION:
+                TableauDeck t = tableau.get(estado.getOrigen());
+                FoundationDeck f = foundation.get(estado.getDestino());
+                CartaInglesa c = f.removerUltimaCarta();
+                if (estado.isVoltearUltima() && !t.isEmpty()) t.getUltimaCarta().makeFaceDown();
+                t.agregarCartaDirecto(c, true);
+                break;
+        }
+        return true;
     }
 
 }

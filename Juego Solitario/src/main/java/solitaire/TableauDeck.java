@@ -94,7 +94,7 @@ public class TableauDeck {
      *
      * @return la carta que está al final, null si estaba vacio
      */
-    CartaInglesa verUltimaCarta() {
+    public CartaInglesa verUltimaCarta() {
         CartaInglesa ultimaCarta = null;
         if (!cartas.isEmpty()) {
             ultimaCarta = cartas.getLast();
@@ -201,5 +201,27 @@ public class TableauDeck {
 
     public ArrayList<CartaInglesa> getCards() {
         return cartas;
+    }
+
+    public ArrayList<CartaInglesa> removerUltimas(int cantidad) {
+        ArrayList<CartaInglesa> bloque = new ArrayList<>();
+        for (int i = 0; i < cantidad && !cartas.isEmpty(); i++) {
+            bloque.add(0, cartas.remove(cartas.size() - 1));
+        }
+        return bloque;
+    }
+
+    public void agregarDirecto(ArrayList<CartaInglesa> bloque) {
+        if (bloque != null) {
+            cartas.addAll(bloque);
+        }
+    }
+
+    public void agregarCartaDirecto(CartaInglesa carta, boolean faceUp) {
+        if (carta != null) {
+            if (faceUp) carta.makeFaceUp();
+            else carta.makeFaceDown();
+            cartas.add(carta);
+        }
     }
 }

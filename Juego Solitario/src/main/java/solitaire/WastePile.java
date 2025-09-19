@@ -73,4 +73,21 @@ public class WastePile {
     public int size() {
         return cartas.size();
     }
+
+    public ArrayList<CartaInglesa> retirarUltimas(int cantidad, boolean faceUp) {
+        ArrayList<CartaInglesa> retiradas = new ArrayList<>();
+        for (int i = 0; i < cantidad && !cartas.estaVacia(); i++) {
+            CartaInglesa carta = cartas.pop();
+            if (faceUp) carta.makeFaceUp();
+            retiradas.add(carta);
+        }
+        return retiradas;
+    }
+
+    public void addCarta(CartaInglesa carta) {
+        if (carta != null) {
+            carta.makeFaceUp();
+            cartas.push(carta);
+        }
+    }
 }

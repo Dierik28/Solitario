@@ -1,7 +1,9 @@
 package com.example.juegosolitario;
 
 import DeckOfCards.CartaInglesa;
+import DeckOfCards.Pila;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.effect.Glow;
 import javafx.scene.image.Image;
@@ -10,6 +12,7 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.Pane;
+import solitaire.EstadoJuego;
 import solitaire.FoundationDeck;
 import solitaire.SolitaireGame;
 import solitaire.TableauDeck;
@@ -17,7 +20,8 @@ import solitaire.TableauDeck;
 import java.util.ArrayList;
 
 public class TableroSolitarioController {
-
+    @FXML
+    private Button undo;
     // Paneles de las fundaciones
     @FXML
     private Pane fundacionPicas;
@@ -53,12 +57,13 @@ public class TableroSolitarioController {
     // Control arrastre de cartas
     private int indiceColumnaOrigen = -1;
     private boolean desdeDescarte = false;
+    private Pila<EstadoJuego> pilaMovimientos;
 
     // Se inicializa el Juego y los paneles del tablero
     @FXML
     private void initialize() {
         juegoSolitario = new SolitaireGame();
-
+        pilaMovimientos = new Pila<>(100);
         panelesColumnas = new ArrayList<>();
         panelesColumnas.add(columna1);
         panelesColumnas.add(columna2);
@@ -76,6 +81,16 @@ public class TableroSolitarioController {
 
         configurarEventos();
         actualizarInterfaz();
+
+        undo.setOnAction(e -> manejarUndo());
+    }
+
+    @FXML
+    private void manejarUndo() {
+        if (juegoSolitario.undo()) {
+            actualizarInterfaz();
+            lblEstado.setText("");
+        }
     }
 
     //Método para trabajar correctamente el click al momento de robar una carta
@@ -340,4 +355,6 @@ public class TableroSolitarioController {
         label.setGraphic(vista);
         return label;
     }
+
+
 }

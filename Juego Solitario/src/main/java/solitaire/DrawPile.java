@@ -107,6 +107,24 @@ public class DrawPile {
         }
     }
 
+    public ArrayList<CartaInglesa> retirarUltimas(int cantidad, boolean faceUp) {
+        ArrayList<CartaInglesa> retiradas = new ArrayList<>();
+        for (int i = 0; i < cantidad && !cartas.estaVacia(); i++) {
+            CartaInglesa carta = cartas.pop();
+            if (faceUp) carta.makeFaceUp();
+            retiradas.add(carta);
+        }
+        return retiradas;
+    }
+
+    public void regresarCartas(ArrayList<CartaInglesa> cartasARetornar) {
+        for (int i = cartasARetornar.size() - 1; i >= 0; i--) {
+            CartaInglesa carta = cartasARetornar.get(i);
+            carta.makeFaceDown();
+            this.cartas.push(carta);
+        }
+    }
+
     @Override
     public String toString() {
         if (cartas.estaVacia()) {
