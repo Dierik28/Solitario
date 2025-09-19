@@ -1,6 +1,8 @@
 package solitaire;
 
 import DeckOfCards.CartaInglesa;
+import DeckOfCards.Mazo;
+import DeckOfCards.Pila;
 
 import java.util.ArrayList;
 
@@ -10,12 +12,17 @@ import java.util.ArrayList;
  * @version 2025
  */
 public class DrawPile {
-    private ArrayList<CartaInglesa> cartas;
+    private Pila<CartaInglesa> cartas;
     private int cuantasCartasSeEntregan = 3;
 
     public DrawPile() {
-        DeckOfCards.Mazo mazo = new DeckOfCards.Mazo();
-        cartas = mazo.getCartas();
+
+        cartas = new Pila<>(52);
+        Mazo mazo = new Mazo();
+        for(CartaInglesa carta : mazo.getCartas()){
+            cartas.push(carta);
+        }
+
         setCuantasCartasSeEntregan(3); // Cambiar a 3 en lugar de dejar el default
     }
 
@@ -47,7 +54,7 @@ public class DrawPile {
     public ArrayList<CartaInglesa> getCartas(int cantidad) {
         ArrayList<CartaInglesa> retiradas = new ArrayList<>();
         for (int i = 0; i < cantidad; i++) {
-            retiradas.add(cartas.remove(0));
+            retiradas.add(cartas.pop());
         }
         return retiradas;
     }
@@ -63,8 +70,8 @@ public class DrawPile {
         int maximoARetirar = Math.min(cartas.size(), cuantasCartasSeEntregan);
 
         for (int i = 0; i < maximoARetirar; i++) {
-            if (!cartas.isEmpty()) { // Verificación adicional de seguridad
-                CartaInglesa retirada = cartas.remove(0);
+            if (!cartas.estaVacia()) { // Verificación adicional de seguridad
+                CartaInglesa retirada = cartas.pop();
                 retirada.makeFaceUp();
                 retiradas.add(retirada);
             }
@@ -82,8 +89,8 @@ public class DrawPile {
 
     public CartaInglesa verCarta() {
         CartaInglesa regresar = null;
-        if (!cartas.isEmpty()) {
-            regresar = cartas.getLast();
+        if (!cartas.estaVacia()) {
+            regresar = cartas.peek();
         }
         return regresar;
     }
@@ -93,15 +100,16 @@ public class DrawPile {
      * @param cartasAgregar cartas que se agregan
      */
     public void recargar(ArrayList<CartaInglesa> cartasAgregar) {
-        cartas = cartasAgregar;
-        for (CartaInglesa aCarta : cartas) {
-            aCarta.makeFaceDown();
+        cartas = new Pila<>(cartasAgregar.size());
+        for(CartaInglesa carta : cartasAgregar){
+            carta.makeFaceDown();
+            cartas.push(carta);
         }
     }
 
     @Override
     public String toString() {
-        if (cartas.isEmpty()) {
+        if (cartas.estaVacia()) {
             return "-E-";
         }
         return "@";

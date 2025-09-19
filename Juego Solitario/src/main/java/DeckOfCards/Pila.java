@@ -43,7 +43,7 @@ public class Pila <T>{
         return tope == pila.length-1;
     }
 
-    public int tamano(){
+    public int size(){
         return tope+1;
     }
 }
